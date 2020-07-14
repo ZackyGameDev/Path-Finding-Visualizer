@@ -17,7 +17,7 @@ surf_x = 0
 surf_y = 0
 xscroll = 0
 yscroll = 0
-scrollsp = 2 # Set this to negative to inverse scrolling controls
+scrollsp = 1 # Set this to negative to inverse scrolling controls
 
 # Tilemap
 tilemap = [
@@ -25,13 +25,10 @@ tilemap = [
     [' ', ' ', ' '],
     [' ', ' ', ' ']
 ]
-current_tile = list()
-tilemap_key_file = dict()
-'''{
-    'H' : pygame.image.load('sprites/wall.png'),
-    'O' : pygame.image.load('sprites/player.png'),
-    'X' : pygame.image.load('sprites/target.png')
-}'''
+current_tile = 'H'
+tilemap_key_file = {
+    'H' : pygame.image.load('sprites/wall.png')
+}
 
 def draw_map_from_array(two_dimensional_array, key_file_dict:dict, display_to_draw_to, xpos=0, ypos=0, tile_size=tile_size):
     '''
@@ -42,15 +39,8 @@ def draw_map_from_array(two_dimensional_array, key_file_dict:dict, display_to_dr
     for row in two_dimensional_array:
         tx = 0
         for tile in row:
-            if tile == 'H':
-                pygame.draw.rect(display_to_draw_to, (255, 255, 255), pygame.Rect(
-                    (tx*tile_size)+xpos,
-                    (ty*tile_size)+ypos,
-                    tile_size,
-                    tile_size
-                ))
-            #if tile in key_file_dict:
-                #display_to_draw_to.blit(key_file_dict[tile], ((tx*tile_size)+xpos, (ty*tile_size)+ypos))
+            if tile in key_file_dict:
+                display_to_draw_to.blit(key_file_dict[tile], ((tx*tile_size)+xpos, (ty*tile_size)+ypos-((tilemap_key_file[current_tile].get_rect().size[1])-tile_size)))
             tx += 1
         ty += 1
 
@@ -79,7 +69,7 @@ while running:
     
     # Calculating the position of the tiles
     mx, my = pygame.mouse.get_pos()
-    tx, ty = int(round((mx-surf_x)/5)), int(round((my-surf_y)/5))
+    tx, ty = int(round(((mx)/5)-surf_x)), int(round(((my)/5)-surf_y))
     
     while tx % tile_size != 0:
         tx -= 1
@@ -120,30 +110,30 @@ while running:
     surf_y += yscroll
     
     # Acting on input
-    if not tx < 1 and not ty < 1:
+    if not tx < 0 and not ty < 0:
         if mouse_left_button_down:
             add_tile_to_tilemap(tilemap, 'H', int(round(tx/tile_size)), int(round(ty/tile_size)))
         if mouse_right_button_down:
             add_tile_to_tilemap(tilemap, ' ', int(round(tx/tile_size)), int(round(ty/tile_size)))
     
         # Drawing tile at the current position
-        pygame.draw.rect(display, (250, 255, 250), pygame.Rect(
-            tx,
-            ty,
-            tile_size,
-            tile_size
-        ))
+        display.blit(tilemap_key_file[current_tile], (tx+surf_x, ty-((tilemap_key_file[current_tile].get_rect().size[1])-tile_size)+surf_y))
     
     # Drawing the boundaries
     for line in [
-        {'start':(0, 0), 'end':((get_2d_array_len(tilemap)[0])*tile_size, 0)},
-        {'start':((get_2d_array_len(tilemap)[0])*tile_size, 0), 'end':((get_2d_array_len(tilemap)[0])*tile_size, (len(tilemap))*tile_size)},
-        {'start':((get_2d_array_len(tilemap)[0])*tile_size, (len(tilemap))*tile_size), 'end':(0, (len(tilemap))*tile_size)},
-        {'start':(0, (len(tilemap))*tile_size), 'end':(0, 0)}
+        {'start':[0, 0], 'end':[(get_2d_array_len(tilemap)[0])*tile_size, 0]},
+        {'start':[(get_2d_array_len(tilemap)[0])*tile_size, 0], 'end':[(get_2d_array_len(tilemap)[0])*tile_size, (len(tilemap))*tile_size]},
+        {'start':[(get_2d_array_len(tilemap)[0])*tile_size, (len(tilemap))*tile_size], 'end':[0, (len(tilemap))*tile_size]},
+        {'start':[0, (len(tilemap))*tile_size], 'end':[0, 0]}
     ]:
+        line['start'][0] += surf_x
+        line['start'][1] += surf_y
+        line['end'][0] += surf_x
+        line['end'][1] += surf_y
+        
         pygame.draw.line(display, (200, 200, 200), line['start'], line['end'])
     
     # Updating the display
-    draw_map_from_array(tilemap, tilemap_key_file, display)
-    win.blit(pygame.transform.scale(display, (1280, 720)), (surf_x, surf_y))
+    draw_map_from_array(tilemap, tilemap_key_file, display, xpos=surf_x, ypos=surf_y)
+    win.blit(pygame.transform.scale(display, (1280, 720)), (0, 0))
     pygame.display.update()
